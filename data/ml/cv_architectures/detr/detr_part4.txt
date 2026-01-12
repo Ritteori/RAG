@@ -1,0 +1,147 @@
+15. Модификации DETR: Deformable DETR, Conditional DETR ... 
+�
+� 1. Deformable DETR 
+• Проблемы vanilla DETR решает: 
+o Медленная конвергенция (slow convergence) 
+o Плохое обнаружение малых объектов 
+• Основная идея: 
+o Вместо внимания ко всем патчам изображения (O(N²)) 
+внимание выбирает только ограниченное число 
+ключевых точек вокруг reference points (деформируемые 
+позиции). 
+o Используется multi-scale feature maps → мелкие объекты 
+становятся видимыми. 
+• Эффект: 
+o Обучение в 10× быстрее, чем у стандартного DETR 
+o Улучшенное качество на малых объектах 
+o Меньшая вычислительная нагрузка 
+�
+� 2. Conditional DETR 
+• Проблема: Vanilla DETR требует больше эпох для обучения 
+• Идея: 
+o Query embeddings делятся на content query и spatial query, 
+которые задают условное внимание (conditional attention) 
+для каждой позиции. 
+o Влияние: более прямое связывание queries с объектами → 
+ускоряет обучение. 
+�
+� 3. DN-DETR (DeNoising DETR) 
+• Добавляет шумные (noisy) версии ground-truth в качестве 
+обучаемых queries 
+• Цель: 
+o Ускорить обучение, чтобы модель быстрее «разучивала» 
+соответствия query ↔ объект 
+• Применение: ускоряет convergence до ~50–100 эпох, почти как у 
+RPN+ROI 
+�
+� 4. SMCA / Efficient DETR и другие 
+• Некоторые модификации направлены на: 
+o Уменьшение памяти и вычислений (Efficient DETR) 
+o Multi-scale attention для мелких объектов (SMCA, Multi-scale 
+Deformable DETR) 
+• Все они сохраняют end-to-end философию DETR: без NMS, без 
+RPN, прямое сопоставление query ↔ target через Hungarian 
+Matching. 
+�
+� 5. Итог 
+• Vanilla DETR → baseline, slow convergence, плохо с малыми 
+объектами 
+• Deformable DETR → быстрее, мелкие объекты 
+• Conditional DETR / DN-DETR → ускоренное обучение через 
+условные query и noising 
+• Multi-scale модификации → лучше для dense prediction, 
+detection и segmentation 
+16. 
+Сравнение с Faster R-CNN / RetinaNet 
+Критерий 
+Архитектура 
+Представлени
+е объектов 
+Matching / 
+Post
+processing 
+Loss-функция 
+Обучение 
+Малые 
+объекты 
+Вычислительн
+ая сложность 
+DETR 
+End-to-end Transformer 
+(Encoder + Decoder) 
+Использует фиксированное 
+число object queries 
+(например, 100), которые 
+обучаются находить объекты 
+Использует Hungarian 
+Matching — один query ↔ 
+один объект, без NMS 
+Комбинация CrossEntropy 
+(класс) + L1/GIoU (боксы) + 
+Hungarian Matching 
+Полностью end-to-end, но 
+очень медленное обучение 
+(первые версии — >500 эпох) 
+Плохо улавливает (патчи 
+теряют детали, отсутствие 
+многоуровневых признаков) 
+O(N²) по числу патчей из-за 
+self-attention (в Deformable 
+DETR улучшено) 
+Faster R-CNN / RetinaNet 
+Anchor-based CNN с RPN 
+(Faster R-CNN) или anchor
+based Dense Prediction 
+(RetinaNet) 
+Каждый anchor box — 
+потенциальный объект 
+(десятки тысяч кандидатов) 
+Требуется Non-Max 
+Suppression (NMS) для 
+удаления дубликатов 
+CrossEntropy + Smooth L1 
+(bbox), без matching (просто по 
+anchor’ам) 
+Быстро сходятся (20–30 эпох), 
+стабильное обучение 
+Хорошо детектирует 
+(используются FPN и multi
+scale feature maps) 
+Локальные свертки → линейная 
+сложность O(N) 
+Гибкость / 
+Универсально
+сть 
+Интерпретаци
+я 
+Inference 
+speed 
+Постепенные 
+улучшения 
+Универсален (можно легко 
+адаптировать для 
+segmentation, tracking, 
+captioning) 
+Query → объект, легко 
+интерпретировать 
+соответствия 
+Медленнее (особенно vanilla 
+версия) 
+Deformable DETR, DN-DETR, 
+Conditional DETR решают 
+слабые стороны 
+�
+� Ключевые отличия в философии: 
+Специализирован под 
+detection 
+Anchors → candidate boxes, 
+сложнее отслеживать «кто что 
+нашёл» 
+Быстрее и стабильнее на 
+практике 
+FPN, Cascade, RetinaNet — 
+зрелые и отточенные 
+• CNN-декторы: «сначала сгенерируй много гипотез (anchors), 
+потом отфильтруй». 
+• DETR: «пусть сеть сама решит, какие объекты есть, через 
+attention и matching». 

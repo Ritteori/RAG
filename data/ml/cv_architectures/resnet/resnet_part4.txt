@@ -1,0 +1,205 @@
+13. Связь с Transformer / ConvNeXt и влияние идей ResNet 
+�
+� 1. Основные идеи ResNet 
+Перед тем как смотреть на трансформеры и ConvNeXt, напомним ключевые 
+аспекты ResNet: 
+1. Residual learning: каждый блок учит поправку к входу F(x), а не полностью 
+новую функцию H(x). 
+2. Shortcut connection: прямой путь для градиента от выхода блока к входу → 
+нет проблемы затухающих градиентов. 
+3. Pre-activation + BatchNorm: нормализация и активация перед свёрткой 
+делают оптимизацию глубокой сети более стабильной. 
+Эти идеи из ResNet обеспечивают тренируемость сверхглубоких сетей, что 
+критично для современного CV и Transformer-моделей. 
+�
+� 2. Residual connection в Transformer 
+• Архитектура Transformer (например, ViT) состоит из блоков: 
+o Multi-Head Self-Attention (MHSA) 
+o Feed-Forward Network (FFN) 
+o Residual connections вокруг MHSA и FFN 
+• Почему нужен skip connection: 
+o Градиенты могут напрямую течь к входу блока → стабилизирует 
+обучение 
+o Позволяет строить длинные цепочки блоков (12, 24 и больше) без 
+потери сигнала 
+• Pre-norm vs post-norm: 
+o В ViT часто используется pre-norm (LayerNorm перед блоком) → идея 
+близка к pre-activation в ResNet 
+o Стабильнее оптимизация глубоких трансформеров 
+�
+� 3. Residual connection в ConvNeXt 
+• ConvNeXt — это современный ConvNet, вдохновлённый Transformer, 
+пытающийся объединить преимущества Conv и Transformer. 
+• Что перенято из ResNet: 
+o Residual block: вход добавляется к выходу блока 
+o Pre-activation/normalization: LayerNorm или BN перед Conv и 
+активацией 
+o Структура блоков гибко масштабируется: шире, глубже, но с 
+сохранением skip connections 
+• ConvNeXt показывает, что идея ResNet работает даже без attention: 
+достаточно правильной residual архитектуры и нормализации 
+�
+� 4. Как ResNet идеи влияют на обучение 
+1. Стабильные градиенты: без residual + pre-activation градиент в очень 
+глубоких сетях может затухать или взрываться. 
+2. Обучение глубоких блоков: Residual learning упрощает оптимизацию, так 
+как каждый блок учит “исправления” к входу, а не полное 
+преобразование. 
+3. Гибкая модификация архитектуры: 
+a. Можно увеличивать глубину и ширину без критического ухудшения 
+сходимости 
+b. Можно комбинировать с attention (ViT, Swin), расширением каналов 
+(ConvNeXt) или SE-блоками 
+�
+� 5. Эмпирические наблюдения 
+• ViT: без residual connection обучение быстро деградирует на глубине >12 
+слоёв 
+• ConvNeXt: ResNet-блоки + pre-activation + large kernel → SOTA на ImageNet 
+• Общие закономерности: residual connection + нормализация = ключ к 
+стабильно глубоким сетям, будь то ConvNet или Transformer 
+�
+� 6. Вывод 
+ResNet не просто “архитектура для ConvNet 2015 года”, а фундаментальная 
+концепция: residual learning и skip connections стали стандартом для всех 
+глубоких моделей, включая Transformer и современные ConvNet, обеспечивая 
+стабильную оптимизацию и возможность масштабирования архитектур. 
+14. Современные улучшения (SkipInit, Fixup Init, LayerScale) 
+�
+� 1. SkipInit 
+• Идея: при инициализации residual-блока умножать вес выходного пути на 
+маленький коэффициент α (~0.1). 
+• Структура блока: 
+y=x+αF(x)  
+• Почему работает: 
+o На старте сигнал от residual блока почти нулевой → сеть стартует 
+ближе к идентичности 
+o Градиенты текут через skip connection без риска взрывов или 
+затухания 
+• Эффект: 
+o Сильнее стабилизирует очень глубокие ResNet (>1000 слоёв) 
+o Сохраняется высокая representational power после обучения 
+�
+� 2. Fixup Initialization 
+• Проблема: BatchNorm сильно упрощает обучение, но в некоторых случаях 
+его хочется избежать (например, маленькие батчи, RNN-подобные блоки). 
+• Идея: специальная инициализация весов + масштабирование residual, 
+чтобы сеть могла обучаться без нормализации. 
+• Основные правила Fixup: 
+o Последний слой residual-блока инициализируется нулями 
+o Первые слои residual-блока — обычная He init 
+o Skip connection остаётся идентичным 
+• Эффект: 
+o Позволяет обучать глубокие ResNet без BatchNorm 
+o Сохраняет стабильность градиентов и точность 
+�
+� 3. LayerScale 
+• Используется в Transformer и ConvNeXt, но применимо и для ResNet
+подобных блоков. 
+• Идея: вводится маленький learnable коэффициент γ после residual: 
+y=x+γF(x)  
+• Инициализируется γ≪1 (например, 1e-4) 
+• Зачем: 
+o На старте блок почти не влияет на сигнал → плавная оптимизация 
+o Сохраняет гибкость: по мере обучения γ\gammaγ растёт, блок 
+начинает вносить полный вклад 
+• Эффект: 
+o Улучшает обучение очень глубоких сетей и трансформеров 
+o Снижает чувствительность к lr и инициализации 
+�
+� 4. Сравнение методов 
+Метод 
+SkipInit 
+BatchNorm 
+нужен? 
+да 
+Идея 
+α-residual 
+Применение 
+Очень глубокие ResNet 
+Fixup Init 
+LayerScale 
+нет 
+опционально 
+�
+� 5. Общая идея 
+специальная инициализация 
++ scale 
+learnable scale γ 
+Когда нет нормализации 
+Deep ResNet, Transformer, 
+ConvNeXt 
+Современные улучшения делают residual-блоки ещё более стабильными и легко 
+оптимизируемыми, особенно при глубине >100 слоёв или при отсутствии 
+BatchNorm, сохраняя все преимущества original ResNet. 
+15. Код: реализация базового блока и Bottleneck 
+import torch 
+import torch.nn as nn 
+import torch.nn.functional as F 
+ 
+class BasicBlock(nn.Module): 
+    expansion = 1  # для совместимости с Bottleneck 
+ 
+    def __init__(self, in_channels, out_channels, stride=1, downsample=None): 
+        super().__init__() 
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, 
+stride=stride, padding=1, bias=False) 
+        self.bn1 = nn.BatchNorm2d(out_channels) 
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, 
+padding=1, bias=False) 
+        self.bn2 = nn.BatchNorm2d(out_channels) 
+        self.downsample = downsample  # для согласования размеров при 
+изменении числа каналов или stride 
+ 
+    def forward(self, x): 
+        identity = x  # shortcut 
+ 
+        out = self.conv1(x) 
+        out = self.bn1(out) 
+        out = F.relu(out) 
+ 
+        out = self.conv2(out) 
+        out = self.bn2(out) 
+ 
+        if self.downsample is not None: 
+            identity = self.downsample(x) 
+ 
+        out += identity 
+        out = F.relu(out) 
+        return out 
+ 
+class Bottleneck(nn.Module): 
+    expansion = 4  # выходной канал = out_channels * 4 
+ 
+    def __init__(self, in_channels, out_channels, stride=1, downsample=None): 
+        super().__init__() 
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, 
+bias=False)  # сокращение каналов 
+        self.bn1 = nn.BatchNorm2d(out_channels) 
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, 
+stride=stride, padding=1, bias=False) 
+        self.bn2 = nn.BatchNorm2d(out_channels) 
+        self.conv3 = nn.Conv2d(out_channels, out_channels * self.expansion, 
+kernel_size=1, bias=False)  # увеличение каналов 
+        self.bn3 = nn.BatchNorm2d(out_channels * self.expansion) 
+        self.downsample = downsample 
+ 
+    def forward(self, x): 
+        identity = x 
+ 
+        out = self.conv1(x) 
+        out = self.bn1(out) 
+        out = F.relu(out) 
+ 
+        out = self.conv2(out) 
+        out = self.bn2(out) 
+        out = F.relu(out) 
+ 
+        out = self.conv3(out) 
+        out = self.bn3(out) 
+ 
+        if self.downsample is not None: 
+            identity = self.downsample(x) 
+ 
+        out += identity 
+        out = F.relu(out) 
+        return out 
