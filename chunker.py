@@ -14,14 +14,13 @@ for root, dirs, files in os.walk(base_dir):
                 text = re.sub(f"[{re.escape(trash_symbols)}]", "", text)
                 data_texts[path] = text
 
-def build_chunks():
+def build_chunks(overlap=200, chunk_size=750):
     chunked_texts = {}
 
     for key, value in data_texts.items():
 
         start = 0
         index = 1
-        overlap = 200
 
         while start <= len(value):
 
@@ -29,7 +28,7 @@ def build_chunks():
             name = path[1]
             topic = name.split('/', 2)[1]
 
-            chunk_text = value[start:start + 750].replace('\n', ' ')
+            chunk_text = value[start:start + chunk_size].replace('\n', ' ')
 
             if len(chunk_text) < 50:
                 break
@@ -38,12 +37,15 @@ def build_chunks():
                 "text": chunk_text,
                 "path": key,
                 "category": topic,
-                "chunk_index": index
+                "chunk_index": index,
+                "source_file": key.split('RAG')[1],
+                "char_start": start,
+                "char_end": start + chunk_size if start + chunk_size <= len(value) else len(value)
             }
 
             chunked_texts[f"{name}::{index}"] = chunk
 
-            start += 750 - overlap
+            start += chunk_size - overlap
             index += 1
 
     return chunked_texts
