@@ -1,0 +1,52 @@
+import os
+import re
+
+base_dir = os.path.join(os.getcwd(), "data")
+
+data_texts = {}
+trash_symbols = "↑←➢⋯⇨├└⚡️❖⚖️⚠️`&éЙ✅❌❗️�"
+for root, dirs, files in os.walk(base_dir):
+    for file in files:
+        if file.endswith(".txt"):
+            path = os.path.join(root, file)
+            with open(path, "r", encoding="utf-8") as f:
+                text = f.read().lower()
+                text = re.sub(f"[{re.escape(trash_symbols)}]", "", text)
+                data_texts[path] = text
+
+def build_chunks():
+    chunked_texts = {}
+
+    for key, value in data_texts.items():
+
+        start = 0
+        index = 1
+        overlap = 200
+
+        while start <= len(value):
+
+            path = key.split('RAG/')
+            name = path[1]
+            topic = name.split('/', 2)[1]
+
+            chunk_text = value[start:start + 750].replace('\n', ' ')
+
+            if len(chunk_text) < 50:
+                break
+
+            chunk = {
+                "text": chunk_text,
+                "path": key,
+                "category": topic,
+                "chunk_index": index
+            }
+
+            chunked_texts[f"{name}::{index}"] = chunk
+
+            start += 750 - overlap
+            index += 1
+
+    return chunked_texts
+
+if __name__ == "__main__":
+    chunked_texts = build_chunks()

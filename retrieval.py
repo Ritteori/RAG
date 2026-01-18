@@ -1,0 +1,75 @@
+import numpy as np
+from collections import Counter
+
+from config import MATH_KEYWORDS,ML_KEYWORDS,OPS_KEYWORDS,PYTHON_KEYWORDS,SOFTSKILLS_KEYWORDS,STAT_KEYWORDS
+
+def guess_categories(prompt):
+
+    reps = []
+
+    p = prompt.lower()
+    for word in p.strip().split():
+        if word in OPS_KEYWORDS:
+            reps.append("ops")
+        if word in MATH_KEYWORDS:
+            reps.append("math")
+        if word in SOFTSKILLS_KEYWORDS:
+            reps.append("softskills")
+        if word in STAT_KEYWORDS:
+            reps.append("statistics_probabilities")
+        if word in ML_KEYWORDS:
+            reps.append("ml")
+        if word in PYTHON_KEYWORDS:
+            reps.append("python")
+    
+    counter = Counter(reps)
+    if len(counter) == 0:
+        return None
+    else:
+        return counter.most_common(1)[0][0]
+
+def search(prompts, model, category_indices, category_id_maps, k=3):
+    results = {}
+
+    for idx, prompt in enumerate(prompts):
+        emb = model.encode(prompt, normalize_embeddings=True)
+        emb = np.array([emb], dtype="float32")
+
+        results[idx] = []
+
+        cat = guess_categories(prompt)
+
+        # ---- CASE 1: категория определена ----
+        if cat and cat in category_indices:
+            index = category_indices[cat]
+            distances, ids = index.search(emb, k)
+
+            for score, i in zip(distances[0], ids[0]):
+                results[idx].append({
+                    "chunk_id": category_id_maps[cat][i],
+                    "score": float(score),
+                    "category": cat
+                })
+
+        # ---- CASE 2: fallback (по всем категориям) ----
+        else:
+            all_candidates = []
+
+            for cat_name, index in category_indices.items():
+                distances, ids = index.search(emb, k)
+
+                for score, i in zip(distances[0], ids[0]):
+                    all_candidates.append({
+                        "chunk_id": category_id_maps[cat_name][i],
+                        "score": float(score),
+                        "category": cat_name
+                    })
+
+            # глобальная сортировка
+            all_candidates.sort(key=lambda x: x["score"], reverse=True)
+
+            # берём top-k глобально
+            results[idx] = all_candidates[:k]
+
+    return results
+
