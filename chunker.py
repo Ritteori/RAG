@@ -22,13 +22,15 @@ def build_chunks(overlap=200, chunk_size=750):
         start = 0
         index = 1
 
-        while start <= len(value):
+        while start < len(value):
 
             path = key.split('RAG/')
             name = path[1]
             topic = name.split('/', 2)[1]
 
-            chunk_text = value[start:start + chunk_size].replace('\n', ' ')
+            raw_chunk = value[start:start + chunk_size]
+            chunk_text = raw_chunk.replace('\n', ' ')
+            char_end = start + len(raw_chunk)
 
             if len(chunk_text) < 50:
                 break
@@ -40,7 +42,7 @@ def build_chunks(overlap=200, chunk_size=750):
                 "chunk_index": index,
                 "source_file": key.split('RAG')[1],
                 "char_start": start,
-                "char_end": start + chunk_size if start + chunk_size <= len(value) else len(value)
+                "char_end": char_end
             }
 
             chunked_texts[f"{name}::{index}"] = chunk
