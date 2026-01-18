@@ -97,4 +97,23 @@ def group_by_files(searches, chunked_texts):
 
     return grouped
 
+def find_neighbours(groups,chunked_texts):
+    neighbours = {}
 
+    for source_file, chunks_info in groups.items():
+        
+        if source_file not in neighbours:
+            neighbours[source_file] = {
+                'anchor_chunks':[],
+                'context_chunks':[]
+            }
+
+        for info in chunks_info:
+            chunk_index = info['chunk_index']
+            chunk_indices = [i for i in range(chunk_index-1,chunk_index+2)]
+
+            neighbours[source_file]['anchor_chunks'].append(chunk_index)
+            for index in chunk_indices:
+                chunk_name = info['chunk_id'].split('::')[0] + f'::{index}'
+                if chunk_name in chunked_texts:
+                    neighbours[source_file]['context_chunks'].append(index)
