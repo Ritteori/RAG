@@ -117,3 +117,34 @@ def find_neighbours(groups,chunked_texts):
                 chunk_name = info['chunk_id'].split('::')[0] + f'::{index}'
                 if chunk_name in chunked_texts:
                     neighbours[source_file]['context_chunks'].append(index)
+
+    return neighbours
+
+def build_context_texts(neighbours, chunked_texts):
+    texts = []
+
+    for file, info in neighbours.items():
+        file_key = file[1:]
+
+        context_indices = sorted(info["context_chunks"])
+
+        current_text = ""
+        prev_idx = None
+
+        for idx in context_indices:
+            chunk_path = f"{file_key}::{idx}"
+
+            if chunk_path not in chunked_texts:
+                continue
+
+            if prev_idx is not None and idx != prev_idx + 1:
+                texts.append(current_text)
+                current_text = ""
+
+            current_text += chunked_texts[chunk_path]["text"]
+            prev_idx = idx
+
+        if current_text:
+            texts.append(current_text)
+
+    return texts
