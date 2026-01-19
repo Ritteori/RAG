@@ -1,3 +1,5 @@
+COUNT_OF_BEST_CONTEXTS = 3
+
 MATH_KEYWORDS = [
     "vector", "вектор",
     "matrix", "матрица",

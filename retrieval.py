@@ -4,6 +4,15 @@ from collections import Counter
 from config import MATH_KEYWORDS,ML_KEYWORDS,OPS_KEYWORDS,PYTHON_KEYWORDS,SOFTSKILLS_KEYWORDS,STAT_KEYWORDS
 
 def guess_categories(prompt):
+    """
+    Guess the most relevant category for a user prompt using keyword matching.
+
+    Args:
+        prompt (str): User query.
+
+    Returns:
+        str | None: Category name if detected, otherwise None.
+    """
 
     reps = []
 
@@ -29,6 +38,25 @@ def guess_categories(prompt):
         return counter.most_common(1)[0][0]
 
 def search(prompts, model, category_indices, category_id_maps, k=3):
+    """
+    Perform semantic search over FAISS indices with optional category routing.
+
+    For each prompt, the function:
+    - encodes the query
+    - selects a category via keyword matching (if possible)
+    - searches either a single category index or all indices (fallback)
+
+    Args:
+        prompts (list[str]): List of user queries.
+        model: SentenceTransformer model.
+        category_indices (dict): category -> FAISS index.
+        category_id_maps (dict): category -> faiss_id -> chunk_id.
+        k (int): Number of top results to retrieve.
+
+    Returns:
+        dict: prompt_id -> list of retrieved chunks with scores.
+    """
+
     results = {}
 
     for idx, prompt in enumerate(prompts):
@@ -74,6 +102,17 @@ def search(prompts, model, category_indices, category_id_maps, k=3):
     return results
 
 def group_by_files(searches, chunked_texts):
+    """
+    Group retrieved chunks by their source document.
+
+    Args:
+        searches (dict): Output of the search() function.
+        chunked_texts (dict): chunk_id -> chunk metadata.
+
+    Returns:
+        dict: source_file -> sorted list of chunk metadata.
+    """
+
     grouped = {}
 
     for objects in searches.values():
@@ -98,6 +137,20 @@ def group_by_files(searches, chunked_texts):
     return grouped
 
 def find_neighbours(groups,chunked_texts):
+    """
+    Find neighbouring chunks around retrieved anchor chunks.
+
+    For each anchor chunk, includes its previous and next chunks
+    (if they exist) to preserve local context.
+
+    Args:
+        groups (dict): Output of group_by_files().
+        chunked_texts (dict): chunk_id -> chunk metadata.
+
+    Returns:
+        dict: source_file -> anchor chunks and their context chunks.
+    """
+
     neighbours = {}
 
     for source_file, chunks_info in groups.items():
@@ -121,6 +174,20 @@ def find_neighbours(groups,chunked_texts):
     return neighbours
 
 def build_context_texts(neighbours, chunked_texts):
+    """
+    Build contiguous context texts from neighbouring chunks.
+
+    Merges consecutive chunks into coherent text blocks
+    based on their chunk indices.
+
+    Args:
+        neighbours (dict): Output of find_neighbours().
+        chunked_texts (dict): chunk_id -> chunk metadata.
+
+    Returns:
+        list[str]: List of merged context texts.
+    """
+
     texts = []
 
     for file, info in neighbours.items():
@@ -148,3 +215,53 @@ def build_context_texts(neighbours, chunked_texts):
             texts.append(current_text)
 
     return texts
+
+def find_anchor_chunks_scores(searches, neighbours):
+    """
+    Extract similarity scores for anchor chunks.
+
+    Args:
+        searches (dict): Output of the search() function.
+        neighbours (dict): Output of find_neighbours().
+
+    Returns:
+        tuple:
+            chunk_score (dict): chunk_id -> similarity score
+            best_contexts (list[float]): scores of anchor contexts
+    """
+
+    chunk_score = {}
+
+    for chunks in searches.values():
+        for c in chunks:
+            chunk_score[c["chunk_id"]] = c["score"]
+
+    best_contexts = []
+
+    for file, neighbour in neighbours.items():
+        file_key = file[1:]
+
+        for anchor in neighbour["anchor_chunks"]:
+            chunk_id = file_key + f"::{anchor}"
+            best_contexts.append(chunk_score[chunk_id])
+
+    return chunk_score, best_contexts
+
+def find_top_k_contexts(contexts,best_contexts,k):
+    """
+    Select top-k context texts based on similarity scores.
+
+    Args:
+        contexts (list[str]): Context texts.
+        best_contexts (list[float]): Corresponding scores.
+        k (int): Number of contexts to select.
+
+    Returns:
+        list[tuple]: (context_text, score) sorted by score.
+    """
+    
+    pairs = [(context,score) for context,score in zip(contexts,best_contexts)]
+    pairs.sort(key=lambda x:x[1],reverse=True)
+    top_pairs = pairs[:k]
+
+    return top_pairs
