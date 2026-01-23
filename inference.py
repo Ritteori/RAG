@@ -6,11 +6,16 @@ from typing import List
 import requests
 import json
 import re
+import random
 
 app = FastAPI(title='RAG implementation')
-
-class Query(BaseModel):
-    prompts: List[str]
+with open('questions.txt','r',encoding='utf-8') as f:
+    ALL_QUESTIONS = f.readlines()
+class Answer(BaseModel):
+    user_answer: str
+class QueryRAG(BaseModel):
+    question: str
+    user_answer: str
 
 def normalize_text(text):
     # удаляем непечатные символы и заменяем битые UTF-8
@@ -49,27 +54,29 @@ CHINESE_RE = re.compile(r'[\u4e00-\u9fff]')
 def contains_chinese(text: str) -> bool:
     return bool(CHINESE_RE.search(text))
 
+@app.get("/get_question")
+def get_random_question():
+    q = random.choice(ALL_QUESTIONS).strip()
+    return {"question": q}
+
 @app.post("/query")
-def query_rag(query: Query):
-    final_prompt_with_thrash = inference_mvp(query.prompts)
-    final_prompt = normalize_text(final_prompt_with_thrash)
-    answer = call_ollama_chat(final_prompt)
-    
+def query_rag(payload: QueryRAG):
+    question = payload.question
+    answer = payload.user_answer
+
+    final_prompt = normalize_text(inference_mvp(question, answer))
+    print(final_prompt)
+
+    response_text = call_ollama_chat(final_prompt)
+
     MAX_RETRIES = 5
-    REGENERATE_PREFIX = (
-    "В ПРЕДЫДУЩЕМ ОТВЕТЕ БЫЛ НЕРУССКИЙ ТЕКСТ.\n"
-    "ЭТО ЗАПРЕЩЕНО.\n\n"
-    "Перепиши ответ полностью.\n"
-    "Используй ТОЛЬКО русский язык.\n\n"
-)
+    REGENERATE_PREFIX = "В предыдущем ответе был не русский текст. Перепиши ответ полностью, только на русском."
     retries = 0
-    while contains_chinese(answer) and retries < MAX_RETRIES:
+    while contains_chinese(response_text) and retries < MAX_RETRIES:
         retries += 1
-        answer = call_ollama_chat(REGENERATE_PREFIX + final_prompt)
+        response_text = call_ollama_chat(REGENERATE_PREFIX + final_prompt)
 
-    if contains_chinese(answer):
-        return {
-            "answer": "Ошибка генерации: модель нарушает языковое ограничение."
-        }
+    if contains_chinese(response_text):
+        return {"answer": "Ошибка генерации: модель нарушает языковое ограничение."}
 
-    return {"answer": answer}
+    return {"answer": response_text}
