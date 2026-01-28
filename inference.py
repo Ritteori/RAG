@@ -1,12 +1,15 @@
 from prompt_builder import inference_mvp
+from load_index import category_indices, category_id_maps, chunked_texts
 
+from sentence_transformers import SentenceTransformer
 from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import List
 import requests
 import json
 import re
 import random
+
+model = SentenceTransformer( "sentence-transformers/all-MiniLM-L6-v2", cache_folder="/data/models_cache" )
 
 app = FastAPI(title='RAG implementation')
 with open('questions.txt','r',encoding='utf-8') as f:
@@ -64,7 +67,7 @@ def query_rag(payload: QueryRAG):
     question = payload.question
     answer = payload.user_answer
 
-    final_prompt = normalize_text(inference_mvp(question, answer))
+    final_prompt = normalize_text(inference_mvp(model, category_indices, category_id_maps, chunked_texts, question, answer))
     print(final_prompt)
 
     response_text = call_ollama_chat(final_prompt)
@@ -73,10 +76,12 @@ def query_rag(payload: QueryRAG):
     REGENERATE_PREFIX = "В предыдущем ответе был не русский текст. Перепиши ответ полностью, только на русском."
     retries = 0
     while contains_chinese(response_text) and retries < MAX_RETRIES:
+        print('Regenerating answer due to incorrect output...')
         retries += 1
         response_text = call_ollama_chat(REGENERATE_PREFIX + final_prompt)
 
     if contains_chinese(response_text):
         return {"answer": "Ошибка генерации: модель нарушает языковое ограничение."}
 
+    print("answer:",response_text)
     return {"answer": response_text}

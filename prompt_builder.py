@@ -1,6 +1,3 @@
-from sentence_transformers import SentenceTransformer
-from chunker import build_chunks
-from embedder import embed
 from retrieval import (
     search,
     group_by_files,
@@ -11,16 +8,7 @@ from retrieval import (
 )
 from config import COUNT_OF_BEST_CONTEXTS
 
-model = SentenceTransformer(
-    "sentence-transformers/all-MiniLM-L6-v2",
-    cache_folder="/data/models_cache"
-)
-
-chunked_texts = build_chunks()
-embedded_texts, chunks_by_category, category_indices, category_id_maps = embed(model, chunked_texts)
-
-
-def inference_mvp(question: str, answer: str, top_k: int = COUNT_OF_BEST_CONTEXTS) -> str:
+def inference_mvp(model, category_indices, category_id_maps, chunked_texts, question: str, answer: str, top_k: int = COUNT_OF_BEST_CONTEXTS) -> str:
     """
     Create final prompt for llm
 
@@ -53,7 +41,6 @@ def inference_mvp(question: str, answer: str, top_k: int = COUNT_OF_BEST_CONTEXT
         "— Использование любого другого языка запрещено.\n"
         "— Английские термины (например, backpropagation, overfitting) допускаются "
         "ТОЛЬКО внутри русского текста.\n"
-        "— Если корректный ответ на русском невозможен, верни пустой JSON {}.\n\n"
 
         "ТРЕБОВАНИЯ К ОЦЕНКЕ:\n"
         "1) Оцени ответ ОЧЕНЬ строго по шкале от 0 до 10, как на реальном собеседовании "
