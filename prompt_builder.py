@@ -1,34 +1,15 @@
-from retrieval import (
-    search,
-    group_by_files,
-    find_neighbours,
-    build_context_texts,
-    find_anchor_chunks_scores,
-    find_top_k_contexts
-)
-from config import COUNT_OF_BEST_CONTEXTS
-
-def inference_mvp(model, category_indices, category_id_maps, chunked_texts, question: str, answer: str, top_k: int = COUNT_OF_BEST_CONTEXTS) -> str:
+def inference_mvp(top_k_contexts, question: str, answer: str) -> str:
     """
     Create final prompt for llm
 
     Args:
+        top_k_contexts
         question: list(str) — user questions
         top_k: how many contexts include (по умолчанию COUNT_OF_BEST_CONTEXTS)
 
     Returns:
         final_prompt: finished text(str)
     """
-    searches = search(question, model, category_indices, category_id_maps, k=10)
-    
-    groups = group_by_files(searches, chunked_texts)
-    
-    neighbours = find_neighbours(groups, chunked_texts)
-    
-    contexts = build_context_texts(neighbours, chunked_texts)
-    
-    chunk_score, best_contexts = find_anchor_chunks_scores(searches, neighbours)
-    top_k_contexts = find_top_k_contexts(contexts, best_contexts, top_k)
     
     system_part = (
         "SYSTEM:\n"

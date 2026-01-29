@@ -1,4 +1,5 @@
 from prompt_builder import inference_mvp
+from retriever import retrive
 from load_index import category_indices, category_id_maps, chunked_texts
 
 from sentence_transformers import SentenceTransformer
@@ -67,7 +68,8 @@ def query_rag(payload: QueryRAG):
     question = payload.question
     answer = payload.user_answer
 
-    final_prompt = normalize_text(inference_mvp(model, category_indices, category_id_maps, chunked_texts, question, answer))
+    top_k_contexts = retrive(model, category_indices, category_id_maps, chunked_texts, question)
+    final_prompt = normalize_text(inference_mvp(top_k_contexts, question, answer))
     print(final_prompt)
 
     response_text = call_ollama_chat(final_prompt)
