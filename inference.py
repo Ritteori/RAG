@@ -1,6 +1,7 @@
 from prompt_builder import inference_mvp
 from retriever import retrive
 from load_index import category_indices, category_id_maps, chunked_texts
+from logger import setup_logger
 
 from sentence_transformers import SentenceTransformer
 from fastapi import FastAPI
@@ -9,6 +10,9 @@ import requests
 import json
 import re
 import random
+
+logger = setup_logger('RAG')
+logger.info('Сервер запущен')
 
 model = SentenceTransformer( "sentence-transformers/all-MiniLM-L6-v2", cache_folder="/data/models_cache" )
 
@@ -61,18 +65,25 @@ def contains_chinese(text: str) -> bool:
 @app.get("/get_question")
 def get_random_question():
     q = random.choice(ALL_QUESTIONS).strip()
+    logger.info(f"Вытянули вопрос длиной={len(q)}")
+    logger.debug(f"Question: {q}")
     return {"question": q}
 
 @app.post("/query")
 def query_rag(payload: QueryRAG):
+    logger.info("Получен запрос пользователя")
     question = payload.question
     answer = payload.user_answer
 
     top_k_contexts = retrive(model, category_indices, category_id_maps, chunked_texts, question)
+    logger.info(f"Найдено {len(top_k_contexts)} контекстов")
+    logger.debug(f"Top-k scores: {top_k_contexts}")
+
     final_prompt = normalize_text(inference_mvp(top_k_contexts, question, answer))
-    print(final_prompt)
+    logger.debug(f'Final prompt: {final_prompt}')
 
     response_text = call_ollama_chat(final_prompt)
+    logger.debug(f'Model response: {response_text}')
 
     MAX_RETRIES = 5
     REGENERATE_PREFIX = "В предыдущем ответе был не русский текст. Перепиши ответ полностью, только на русском."
@@ -85,5 +96,5 @@ def query_rag(payload: QueryRAG):
     if contains_chinese(response_text):
         return {"answer": "Ошибка генерации: модель нарушает языковое ограничение."}
 
-    print("answer:",response_text)
+    logger.info("Ответ успешно сгенерирован")
     return {"answer": response_text}
