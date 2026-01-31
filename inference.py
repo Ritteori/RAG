@@ -1,7 +1,7 @@
 from prompt_builder import inference_mvp
 from retriever import retrive
 from load_index import category_indices, category_id_maps, chunked_texts
-from logger import setup_logger
+from logger import setup_logger, timed
 
 from sentence_transformers import SentenceTransformer
 from fastapi import FastAPI
@@ -75,21 +75,24 @@ def query_rag(payload: QueryRAG):
     question = payload.question
     answer = payload.user_answer
 
-    top_k_contexts = retrive(model, category_indices, category_id_maps, chunked_texts, question)
+    with timed(logger, 'Top k contexts'):
+        top_k_contexts = retrive(model, category_indices, category_id_maps, chunked_texts, question)
     logger.info(f"Найдено {len(top_k_contexts)} контекстов")
     logger.debug(f"Top-k scores: {top_k_contexts}")
 
-    final_prompt = normalize_text(inference_mvp(top_k_contexts, question, answer))
+    with timed(logger, 'Final prompt'):
+        final_prompt = normalize_text(inference_mvp(top_k_contexts, question, answer))
     logger.debug(f'Final prompt: {final_prompt}')
 
-    response_text = call_ollama_chat(final_prompt)
+    with timed(logger, 'Model response'):
+        response_text = call_ollama_chat(final_prompt)
     logger.debug(f'Model response: {response_text}')
 
     MAX_RETRIES = 5
     REGENERATE_PREFIX = "В предыдущем ответе был не русский текст. Перепиши ответ полностью, только на русском."
     retries = 0
     while contains_chinese(response_text) and retries < MAX_RETRIES:
-        print('Regenerating answer due to incorrect output...')
+        logger.info('Regenerating answer due to incorrect output...')
         retries += 1
         response_text = call_ollama_chat(REGENERATE_PREFIX + final_prompt)
 
