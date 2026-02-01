@@ -8,10 +8,14 @@ from retrieval import (
 )
 from config import COUNT_OF_BEST_CONTEXTS
 
-def retrive(model, category_indices, category_id_maps, chunked_texts, question: str, top_k: int = COUNT_OF_BEST_CONTEXTS):
+def retrive(model, category_indices, category_id_maps, chunked_texts, logger, question: str, top_k: int = COUNT_OF_BEST_CONTEXTS):
 
     searches = search(question, model, category_indices, category_id_maps, k=10)
-    
+ 
+    for prompt_id, results in searches.items():
+        for i, result in enumerate(results):
+            logger.debug(f"Result {i}: cat={result['category']}, score={result['score']:.3f}, chunk={result['chunk_id'][:50]}...")
+
     groups = group_by_files(searches, chunked_texts)
     
     neighbours = find_neighbours(groups, chunked_texts)

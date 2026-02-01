@@ -57,6 +57,9 @@ def search(prompts, model, category_indices, category_id_maps, k=3):
         dict: prompt_id -> list of retrieved chunks with scores.
     """
 
+    if isinstance(prompts, str):
+        prompts = [prompts]
+
     results = {}
 
     for idx, prompt in enumerate(prompts):

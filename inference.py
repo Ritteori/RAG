@@ -76,7 +76,7 @@ def query_rag(payload: QueryRAG):
     answer = payload.user_answer
 
     with timed(logger, 'Top k contexts'):
-        top_k_contexts = retrive(model, category_indices, category_id_maps, chunked_texts, question)
+        top_k_contexts = retrive(model, category_indices, category_id_maps, chunked_texts, logger, question)
     logger.info(f"Найдено {len(top_k_contexts)} контекстов")
     logger.debug(f"Top-k scores: {top_k_contexts}")
 
