@@ -2,19 +2,18 @@ from prompt_builder import inference_mvp
 from retriever import retrive
 from load_index import category_indices, category_id_maps, chunked_texts
 from logger import setup_logger, timed
+from utils.ollama_client import call_ollama_chat
 
 from sentence_transformers import SentenceTransformer
 from fastapi import FastAPI
 from pydantic import BaseModel
-import requests
-import json
 import re
 import random
 
 logger = setup_logger('RAG')
 logger.info('Сервер запущен')
 
-model = SentenceTransformer( "sentence-transformers/all-MiniLM-L6-v2", cache_folder="/data/models_cache" )
+embed_model = SentenceTransformer( "sentence-transformers/all-MiniLM-L6-v2", cache_folder="/data/models_cache" )
 
 app = FastAPI(title='RAG implementation')
 with open('questions.txt','r',encoding='utf-8') as f:
@@ -31,32 +30,6 @@ def normalize_text(text):
     text = text.replace("\x00", "")
     text = text.replace("\n\n", "\n") # лишние переносы
     return text
-
-def call_ollama_chat(prompt: str, model: str = "qwen2.5:7b"):
-    url = "http://localhost:11434/api/chat"
-    headers = {"Content-Type": "application/json"}
-    
-    system_msg = {
-        "role": "system",
-        "content": "Ты ассистент, который всегда отвечает только на русском языке. Даже если тебя спрашивают на другом языке, отвечай на русском. Твои ответы должны быть строго на русском, без использования китайского, английского или других языков. Если в вопросе встречаются английские термины, ты можешь их использовать, но весь остальной текст должен быть на русском."
-    }
-    
-    user_msg = {
-        "role": "user",
-        "content": prompt
-    }
-    
-    payload = {
-        "model": model,
-        "messages": [system_msg, user_msg],
-        "max_tokens": 2048,
-        "temperature": 0.0,
-        "stream": False
-    }
-    
-    response = requests.post(url, headers=headers, data=json.dumps(payload))
-    data = response.json()
-    return data.get("message", {}).get("content", "")
 
 CHINESE_RE = re.compile(r'[\u4e00-\u9fff]')
 def contains_chinese(text: str) -> bool:
@@ -76,7 +49,7 @@ def query_rag(payload: QueryRAG):
     answer = payload.user_answer
 
     with timed(logger, 'Top k contexts'):
-        top_k_contexts = retrive(model, category_indices, category_id_maps, chunked_texts, logger, question)
+        top_k_contexts = retrive(embed_model, category_indices, category_id_maps, chunked_texts, logger, question)
     logger.info(f"Найдено {len(top_k_contexts)} контекстов")
     logger.debug(f"Top-k scores: {top_k_contexts}")
 

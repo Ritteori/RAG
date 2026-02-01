@@ -1,43 +1,7 @@
 import numpy as np
-from collections import Counter
+from guess_cat import guess_categories
 
-from config import MATH_KEYWORDS,ML_KEYWORDS,OPS_KEYWORDS,PYTHON_KEYWORDS,SOFTSKILLS_KEYWORDS,STAT_KEYWORDS
-
-def guess_categories(prompt):
-    """
-    Guess the most relevant category for a user prompt using keyword matching.
-
-    Args:
-        prompt (str): User query.
-
-    Returns:
-        str | None: Category name if detected, otherwise None.
-    """
-
-    reps = []
-
-    p = prompt.lower()
-    for word in p.strip().split():
-        if word in OPS_KEYWORDS:
-            reps.append("ops")
-        if word in MATH_KEYWORDS:
-            reps.append("math")
-        if word in SOFTSKILLS_KEYWORDS:
-            reps.append("softskills")
-        if word in STAT_KEYWORDS:
-            reps.append("statistics_probabilities")
-        if word in ML_KEYWORDS:
-            reps.append("ml")
-        if word in PYTHON_KEYWORDS:
-            reps.append("python")
-    
-    counter = Counter(reps)
-    if len(counter) == 0:
-        return None
-    else:
-        return counter.most_common(1)[0][0]
-
-def search(prompts, model, category_indices, category_id_maps, k=3):
+def search(prompts, embed_model, category_indices, category_id_maps, model="qwen2.5:7b", k=3):
     """
     Perform semantic search over FAISS indices with optional category routing.
 
@@ -63,12 +27,12 @@ def search(prompts, model, category_indices, category_id_maps, k=3):
     results = {}
 
     for idx, prompt in enumerate(prompts):
-        emb = model.encode(prompt, normalize_embeddings=True)
+        emb = embed_model.encode(prompt, normalize_embeddings=True)
         emb = np.array([emb], dtype="float32")
 
         results[idx] = []
 
-        cat = guess_categories(prompt)
+        cat = guess_categories(prompt,model)
 
         # ---- CASE 1: категория определена ----
         if cat and cat in category_indices:

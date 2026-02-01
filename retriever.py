@@ -8,9 +8,9 @@ from retrieval import (
 )
 from config import COUNT_OF_BEST_CONTEXTS
 
-def retrive(model, category_indices, category_id_maps, chunked_texts, logger, question: str, top_k: int = COUNT_OF_BEST_CONTEXTS):
+def retrive(embed_model, category_indices, category_id_maps, chunked_texts, logger, question: str, model="qwen2.5:7b", top_k: int = COUNT_OF_BEST_CONTEXTS):
 
-    searches = search(question, model, category_indices, category_id_maps, k=10)
+    searches = search(question, embed_model, category_indices, category_id_maps, model, k=10)
  
     for prompt_id, results in searches.items():
         for i, result in enumerate(results):
