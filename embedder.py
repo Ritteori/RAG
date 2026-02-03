@@ -1,7 +1,7 @@
 import faiss
 import numpy as np
 
-def embed(model,chunked_texts):
+def embed(embed_model, chunked_texts):
     """
     Compute embeddings for text chunks and build FAISS indices by category.
 
@@ -10,7 +10,7 @@ def embed(model,chunked_texts):
     each category.
 
     Args:
-        model: SentenceTransformer model used for encoding.
+        embed_model: SentenceTransformer model used for encoding.
         chunked_texts (dict): Mapping chunk_id -> chunk metadata.
 
     Returns:
@@ -24,7 +24,7 @@ def embed(model,chunked_texts):
     keys = list(chunked_texts.keys())
     texts = [chunked_texts[k]['text'] for k in keys]
 
-    embeddings = model.encode(
+    embeddings = embed_model.encode(
         texts,
         batch_size=32,
         normalize_embeddings=True,

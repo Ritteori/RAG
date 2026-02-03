@@ -93,13 +93,11 @@ def group_by_files(searches, chunked_texts):
             grouped[meta["source_file"]].append({
                 "chunk_id": chunk_id,
                 "chunk_index": meta["chunk_index"],
-                "char_start": meta["char_start"],
-                "char_end": meta["char_end"],
                 "score": obj["score"]
             })
 
     for source in grouped:
-        grouped[source].sort(key=lambda x: x["char_start"])
+        grouped[source].sort(key=lambda x: x["chunk_index"])
 
     return grouped
 
