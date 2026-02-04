@@ -49,7 +49,7 @@ def inference_mvp(top_k_contexts, question: str, answer: str) -> str:
         "  \"weak_points\": [\"строка\", \"строка\", ...],\n"
         "  \"missed_topics\": [\"строка\", \"строка\", ...],\n"
         "  \"correct_points\": [\"строка\", \"строка\", ...],\n"
-        "  \"full_correct_answer\": \"максимально правильный развёрнутый ответ на данный вопрос\"\n" 
+        "  \"full_correct_answer\": \"максимально правильный развёрнутый ответ на данный вопрос\,\n" 
         "  \"final_feedback\": \"развёрнутый текст\"\n"
         "}\n"
     )
