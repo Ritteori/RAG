@@ -13,7 +13,7 @@ import random
 logger = setup_logger('RAG')
 logger.info('Сервер запущен')
 
-embed_model = SentenceTransformer( "sentence-transformers/all-MiniLM-L6-v2", cache_folder=r"/data/models_cache" )
+embed_model = SentenceTransformer( "sentence-transformers/all-MiniLM-L6-v2", cache_folder=r"/app/models_cache" )
 
 app = FastAPI(title='RAG implementation')
 with open('questions.txt','r',encoding='utf-8') as f:

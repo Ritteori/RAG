@@ -1,8 +1,11 @@
 import json
 import requests
+import os
+
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 
 def call_ollama_chat(prompt: str, model: str = "qwen2.5:7b"):
-    url = "http://localhost:11434/api/chat"
+    url = OLLAMA_URL + "/api/chat"  # Убедитесь, что используется /api/chat
     headers = {"Content-Type": "application/json"}
     
     system_msg = {
@@ -18,11 +21,27 @@ def call_ollama_chat(prompt: str, model: str = "qwen2.5:7b"):
     payload = {
         "model": model,
         "messages": [system_msg, user_msg],
-        "max_tokens": 2048,
+        "max_tokens": 512,
         "temperature": 0.0,
-        "stream": False
+        "stream": False,
+        "format": "json"
     }
     
-    response = requests.post(url, headers=headers, data=json.dumps(payload))
-    data = response.json()
-    return data.get("message", {}).get("content", "")
+    try:
+        response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=60)
+        response.raise_for_status()
+        
+        # Добавим отладку
+        print(f"Response status: {response.status_code}")
+        print(f"Response text: {response.text[:200]}...")
+        
+        data = response.json()
+        return data.get("message", {}).get("content", "")
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Request error: {e}")
+        return ""
+    except json.JSONDecodeError as e:
+        print(f"JSON decode error: {e}")
+        print(f"Raw response: {response.text[:500]}")
+        return ""
