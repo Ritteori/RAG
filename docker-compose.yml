@@ -1,0 +1,39 @@
+services:
+  rag-api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data:ro
+      - ./storage:/app/storage
+      - ./models_cache:/app/models_cache
+    environment:
+      - OLLAMA_URL=http://ollama:11434
+      - LOG_LEVEL=INFO
+    depends_on:
+      ollama:
+        condition: service_started  # меняем с healthy на started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+      - ./init_ollama.sh:/init_ollama.sh
+    entrypoint: ["/bin/sh", "/init_ollama.sh"]
+    healthcheck:
+      test: ["CMD-SHELL", "ps aux | grep ollama | grep -v grep"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  ollama_data:
