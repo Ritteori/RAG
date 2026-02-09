@@ -9,11 +9,23 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import re
 import random
+import os
 
 logger = setup_logger('RAG')
 logger.info('Сервер запущен')
 
-embed_model = SentenceTransformer( "sentence-transformers/all-MiniLM-L6-v2", cache_folder=r"/app/models_cache" )
+if os.path.exists("/app/models_cache"):
+    cache_folder = "/app/models_cache"
+elif os.path.exists("models_cache"):
+    cache_folder = "models_cache"
+else:
+    home_cache = os.path.expanduser("~/.cache/rag_models")
+    os.makedirs(home_cache, exist_ok=True)
+    cache_folder = home_cache
+
+logger.info(f"Using cache folder: {cache_folder}")
+
+embed_model = SentenceTransformer( "sentence-transformers/all-MiniLM-L6-v2", cache_folder=cache_folder )
 
 app = FastAPI(title='RAG implementation')
 with open('questions.txt','r',encoding='utf-8') as f:
@@ -25,10 +37,9 @@ class QueryRAG(BaseModel):
     user_answer: str
 
 def normalize_text(text):
-    # удаляем непечатные символы и заменяем битые UTF-8
-    text = text.replace("\ufffd", "")  # битые символы
+    text = text.replace("\ufffd", "")
     text = text.replace("\x00", "")
-    text = text.replace("\n\n", "\n") # лишние переносы
+    text = text.replace("\n\n", "\n")
     return text
 
 CHINESE_RE = re.compile(r'[\u4e00-\u9fff]')
