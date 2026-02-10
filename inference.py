@@ -46,6 +46,10 @@ CHINESE_RE = re.compile(r'[\u4e00-\u9fff]')
 def contains_chinese(text: str) -> bool:
     return bool(CHINESE_RE.search(text))
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
 @app.get("/get_question")
 def get_random_question():
     q = random.choice(ALL_QUESTIONS).strip()
