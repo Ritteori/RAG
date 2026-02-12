@@ -1,0 +1,130 @@
+retrieval:
+  search_k: 10
+  top_k_best_contexts: 3
+  neighbour_window: 1
+
+categories:
+  - math
+  - statistics_probabilities
+  - ml
+  - python
+  - ops
+  - softskills
+
+limits:
+  max_retries: 5
+
+logger:
+  logger_name: RAG
+
+keywords:
+  math:
+    - vector
+    - вектор
+    - matrix
+    - матрица
+    - eigenvalue
+    - eigenvector
+    - собственное значение
+    - собственный вектор
+    - norm
+    - норма
+    - gradient
+    - градиент
+    - jacobian
+    - якобиан
+    - hessian
+    - гессиан
+    - integral
+    - интеграл
+    - orthogonal
+    - ортогональный
+    - span
+    - подпространство
+    - pca
+
+  ml:
+    - overfitting
+    - переобучение
+    - underfitting
+    - недообучение
+    - bias-variance
+    - bias variance
+    - loss function
+    - loss
+    - regularization
+    - регуляризация
+    - gradient descent
+    - sgd
+    - epoch
+    - batch
+    - hyperparameter
+    - гиперпараметр
+    - cross-validation
+    - кросс-валидация
+    - inference
+
+  ops:
+    - docker
+    - dockerfile
+    - container
+    - kubernetes
+    - k8s
+    - helm
+    - ci/cd
+    - deployment
+    - orchestration
+    - mlops
+    - devops
+    - image registry
+
+  python:
+    - decorator
+    - декоратор
+    - generator
+    - генератор
+    - yield
+    - async
+    - await
+    - list comprehension
+    - dict comprehension
+    - lambda
+    - pip
+    - virtualenv
+    - venv
+    - import
+
+  statistics_probabilities:
+    - probability
+    - вероятность
+    - bayes
+    - байес
+    - random variable
+    - случайная величина
+    - distribution
+    - распределение
+    - normal distribution
+    - binomial distribution
+    - expectation
+    - мат ожидание
+    - variance
+    - дисперсия
+    - standard deviation
+    - law of large numbers
+    - central limit theorem
+
+  softskills:
+    - communication
+    - коммуникация
+    - feedback
+    - обратная связь
+    - teamwork
+    - работа в команде
+    - leadership
+    - лидерство
+    - conflict
+    - конфликт
+    - motivation
+    - мотивация
+    - empathy
+    - эмпатия

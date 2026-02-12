@@ -13,7 +13,7 @@ for root, dirs, files in os.walk(base_dir):
                 text = re.sub(f"[{re.escape(trash_symbols)}]", "", text)
                 data_texts[path] = text
 
-def build_chunks(data_texts=data_texts, overlap=200, chunk_size=750):
+def build_chunks(overlap=200, chunk_size=750, max_length_before_split=2000, minimal_length=50):
     """
     Split text documents into overlapping chunks with metadata.
 
@@ -45,9 +45,9 @@ def build_chunks(data_texts=data_texts, overlap=200, chunk_size=750):
             
             question_length = len(question_text)
 
-            if question_length < 50:
+            if question_length < minimal_length:
                 continue
-            elif question_length > 2000:
+            elif question_length > max_length_before_split:
                 start = 0
 
                 while start < question_length:
@@ -55,7 +55,7 @@ def build_chunks(data_texts=data_texts, overlap=200, chunk_size=750):
                     raw_chunk = question_text[start:start + chunk_size]
                     chunk_text = raw_chunk.replace('\n', ' ')
 
-                    if len(raw_chunk) < 50:
+                    if len(raw_chunk) < minimal_length:
                         break
                     
                     chunk = {

@@ -1,9 +1,7 @@
 from collections import Counter
-from utils.ollama_client import call_ollama_chat
+from app.utils.ollama_client import call_ollama_chat
 
-from config import MATH_KEYWORDS,ML_KEYWORDS,OPS_KEYWORDS,PYTHON_KEYWORDS,SOFTSKILLS_KEYWORDS,STAT_KEYWORDS
-
-def guess_categories(prompt, model=None):
+def guess_categories(prompt, math, ml, ops, python, softskills, stat, model=None):
     """
     Guess the most relevant category for a user prompt using keyword matching.
 
@@ -52,17 +50,17 @@ def guess_categories(prompt, model=None):
 
         p = prompt.lower()
         for word in p.strip().split():
-            if word in OPS_KEYWORDS:
+            if word in ops:
                 reps.append("ops")
-            if word in MATH_KEYWORDS:
+            if word in math:
                 reps.append("math")
-            if word in SOFTSKILLS_KEYWORDS:
+            if word in softskills:
                 reps.append("softskills")
-            if word in STAT_KEYWORDS:
+            if word in stat:
                 reps.append("statistics_probabilities")
-            if word in ML_KEYWORDS:
+            if word in ml:
                 reps.append("ml")
-            if word in PYTHON_KEYWORDS:
+            if word in python:
                 reps.append("python")
         
         counter = Counter(reps)

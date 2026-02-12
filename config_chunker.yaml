@@ -1,0 +1,7 @@
+chunking:
+  chunk_size: 750
+  overlap: 200
+  max_length_before_division: 2000
+  minimal_length: 50
+  encoder_model: sentence-transformers/all-MiniLM-L6-v2
+  encoder_model_cache: ./models_cache

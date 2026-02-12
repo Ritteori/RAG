@@ -1,26 +1,43 @@
-import pytest
-from unittest.mock import patch, MagicMock
-import json
+from app.services.rag_service import RAGService
+from unittest.mock import MagicMock
 
-@patch('inference.call_ollama_chat')
-def test_rag_with_mocked_llm(mock_ollama,client,sample_answer,sample_question):
-    mock_response = {
-        "score":6,
-        "weak_points": ["не указал regularization"],
-        "missed_topics": ["dropout", "batch normalization"],
-        "correct_points": ["правильно объяснил backpropagation"],
-        "full_correct_answer": "Полный правильный ответ...",
-        "final_feedback": "Хорошо, но можно лучше"
-    }
+def test_rag_with_mocked_llm(
+    mocker,
+    test_config,
+    test_logger,
+    sample_answer,
+    sample_question
+):
+    fake_retriever = MagicMock()
+    fake_retriever.retrieve.return_value = [
+        ("fake context", 0.5),
+        ("aboba", 0.8),
+    ]
 
-    mock_ollama.return_value = json.dumps(mock_response)
+    mock_llm = mocker.patch(
+        "app.services.rag_service.call_ollama_chat",
+        return_value="""
+        {
+            "score": 8,
+            "weak_points": [],
+            "missed_topics": [],
+            "correct_points": [],
+            "full_correct_answer": "text",
+            "final_feedback": "good"
+        }
+        """
+    )
 
-    test_data = {
-        "question": sample_question,
-        "user_answer": sample_answer   
-    }
+    service = RAGService(test_config, test_logger, fake_retriever)
 
-    response = client.post('/query',json=(test_data))
-    assert response.status_code == 200
+    response_text = service.core(sample_question, sample_answer)
 
-    mock_ollama.assert_called_once()
+    assert "score" in response_text
+    assert "weak_points" in response_text
+    assert "missed_topics" in response_text
+    assert "correct_points" in response_text
+    assert "full_correct_answer" in response_text
+    assert "final_feedback" in response_text
+
+    fake_retriever.retrieve.assert_called_once()
+    mock_llm.assert_called_once()

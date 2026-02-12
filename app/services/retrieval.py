@@ -1,7 +1,7 @@
 import numpy as np
-from guess_cat import guess_categories
+from app.services.guess_cat import guess_categories
 
-def search(prompts, embed_model, category_indices, category_id_maps, model="qwen2.5:7b", k=3):
+def search(prompts, embed_model, category_indices, category_id_maps, search_k, math, ml, ops, python, softskills, stat, model="qwen2.5:7b"):
     """
     Perform semantic search over FAISS indices with optional category routing.
 
@@ -15,7 +15,7 @@ def search(prompts, embed_model, category_indices, category_id_maps, model="qwen
         model: SentenceTransformer model.
         category_indices (dict): category -> FAISS index.
         category_id_maps (dict): category -> faiss_id -> chunk_id.
-        k (int): Number of top results to retrieve.
+        search_k (int): Number of top results to retrieve.
 
     Returns:
         dict: prompt_id -> list of retrieved chunks with scores.
@@ -32,12 +32,12 @@ def search(prompts, embed_model, category_indices, category_id_maps, model="qwen
 
         results[idx] = []
 
-        cat = guess_categories(prompt,model)
+        cat = guess_categories(prompt,math, ml, ops, python, softskills, stat, model)
 
         # ---- CASE 1: категория определена ----
         if cat and cat in category_indices:
             index = category_indices[cat]
-            distances, ids = index.search(emb, k)
+            distances, ids = index.search(emb, search_k)
 
             for score, i in zip(distances[0], ids[0]):
                 results[idx].append({
@@ -51,7 +51,7 @@ def search(prompts, embed_model, category_indices, category_id_maps, model="qwen
             all_candidates = []
 
             for cat_name, index in category_indices.items():
-                distances, ids = index.search(emb, k)
+                distances, ids = index.search(emb, search_k)
 
                 for score, i in zip(distances[0], ids[0]):
                     all_candidates.append({
@@ -63,8 +63,8 @@ def search(prompts, embed_model, category_indices, category_id_maps, model="qwen
             # глобальная сортировка
             all_candidates.sort(key=lambda x: x["score"], reverse=True)
 
-            # берём top-k глобально
-            results[idx] = all_candidates[:k]
+            # берём top-search_k глобально
+            results[idx] = all_candidates[:search_k]
 
     return results
 
@@ -212,14 +212,14 @@ def find_anchor_chunks_scores(searches, neighbours):
 
     return chunk_score, best_contexts
 
-def find_top_k_contexts(contexts,best_contexts,k):
+def find_top_k_contexts(contexts,best_contexts,top_k_best_contexts):
     """
     Select top-k context texts based on similarity scores.
 
     Args:
         contexts (list[str]): Context texts.
         best_contexts (list[float]): Corresponding scores.
-        k (int): Number of contexts to select.
+        top_k_best_contexts (int): Number of contexts to select.
 
     Returns:
         list[tuple]: (context_text, score) sorted by score.
@@ -227,6 +227,6 @@ def find_top_k_contexts(contexts,best_contexts,k):
     
     pairs = [(context,score) for context,score in zip(contexts,best_contexts)]
     pairs.sort(key=lambda x:x[1],reverse=True)
-    top_pairs = pairs[:k]
+    top_pairs = pairs[:top_k_best_contexts]
 
     return top_pairs
