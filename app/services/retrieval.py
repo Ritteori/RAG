@@ -1,7 +1,7 @@
 import numpy as np
 from app.services.guess_cat import guess_categories
 
-def search(prompts, embed_model, category_indices, category_id_maps, search_k, math, ml, ops, python, softskills, stat, model="qwen2.5:7b"):
+def search(prompts, embed_model, category_indices, category_id_maps, search_k, math, ml, ops, python, softskills, stat, ollama_client, model="qwen2.5:7b"):
     """
     Perform semantic search over FAISS indices with optional category routing.
 
@@ -32,7 +32,7 @@ def search(prompts, embed_model, category_indices, category_id_maps, search_k, m
 
         results[idx] = []
 
-        cat = guess_categories(prompt,math, ml, ops, python, softskills, stat, model)
+        cat = guess_categories(prompt,math, ml, ops, python, softskills, stat, ollama_client, model)
 
         # ---- CASE 1: категория определена ----
         if cat and cat in category_indices:

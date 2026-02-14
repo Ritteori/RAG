@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from app.api.inference import app
+from app.utils.ollama_client import OllamaCLient
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 import logging
@@ -58,3 +59,7 @@ def test_config():
 @pytest.fixture
 def test_logger():
     return logging.getLogger("test")
+
+@pytest.fixture
+def ollama_client():
+    return OllamaCLient(logger=test_logger)

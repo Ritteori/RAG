@@ -2,6 +2,7 @@ from app.core.logger import setup_logger
 from app.core.settings import load_config
 from app.services.rag_service import RAGService
 from app.services.index_loader import IndexLoader
+from app.utils.ollama_client import OllamaCLient
 from app.services.retriever import Retriever
 from sentence_transformers import SentenceTransformer
 import os
@@ -44,12 +45,14 @@ def create_rag_service():
     index_loader = IndexLoader(config)
     category_indices, category_id_maps, chunked_texts = index_loader.load()
 
+    ollama_client = OllamaCLient(logger)
+
     retriever = Retriever(
         embed_model,category_indices,category_id_maps,chunked_texts,logger,
-        MATH,ML,OPS,PYTHON,SOFTSKILLS,STATISTICS_PROBABILITIES,OLLAMA_MODEL,
-        TOP_K_BEST_CONTEXTS, SEARCH_K
+        MATH,ML,OPS,PYTHON,SOFTSKILLS,STATISTICS_PROBABILITIES,ollama_client,
+        OLLAMA_MODEL, TOP_K_BEST_CONTEXTS, SEARCH_K
     )
 
-    rag_service = RAGService(config,logger, retriever)
+    rag_service = RAGService(config, logger, retriever, ollama_client)
 
     return rag_service, logger

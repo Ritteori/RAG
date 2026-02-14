@@ -21,6 +21,7 @@ class Retriever:
         python,
         softskills,
         stat,
+        ollama_client,
         model="qwen2.5:7b",
         top_k=5,
         search_k=3,
@@ -30,6 +31,7 @@ class Retriever:
         self.category_id_maps = category_id_maps
         self.chunked_texts = chunked_texts
         self.logger = logger
+        self.ollama_client = ollama_client
 
         self.math = math
         self.ml = ml
@@ -56,7 +58,7 @@ class Retriever:
     def _search(self,question):
         searches = search(
             question, self.embed_model, self.category_indices, self.category_id_maps, self.search_k,
-            self.math, self.ml, self.ops, self.python, self.softskills, self.stat, self.model
+            self.math, self.ml, self.ops, self.python, self.softskills, self.stat, self.ollama_client, self.model
         )
 
         for prompt_id, results in searches.items():

@@ -1,12 +1,13 @@
 from app.services.rag_service import RAGService
 from unittest.mock import MagicMock
 
-def test_rag_with_mocked_llm(
+def test_api(
     mocker,
     test_config,
     test_logger,
     sample_answer,
-    sample_question
+    sample_question,
+    ollama_client
 ):
     fake_retriever = MagicMock()
     fake_retriever.retrieve.return_value = [
@@ -14,10 +15,11 @@ def test_rag_with_mocked_llm(
         ("aboba", 0.8),
     ]
 
-    mock_llm = mocker.patch(
-        "app.services.rag_service.call_ollama_chat",
-        return_value="""
-        {
+    service = RAGService(test_config, test_logger, fake_retriever, ollama_client)
+    mock_llm = mocker.patch.object(
+        service.ollama_client,
+        "call_ollama_chat",
+        return_value={
             "score": 8,
             "weak_points": [],
             "missed_topics": [],
@@ -25,10 +27,7 @@ def test_rag_with_mocked_llm(
             "full_correct_answer": "text",
             "final_feedback": "good"
         }
-        """
     )
-
-    service = RAGService(test_config, test_logger, fake_retriever)
 
     response_text = service.core(sample_question, sample_answer)
 

@@ -1,7 +1,6 @@
 from collections import Counter
-from app.utils.ollama_client import call_ollama_chat
 
-def guess_categories(prompt, math, ml, ops, python, softskills, stat, model=None):
+def guess_categories(prompt, math, ml, ops, python, softskills, stat, ollama_client, model=None):
     """
     Guess the most relevant category for a user prompt using keyword matching.
 
@@ -40,10 +39,20 @@ def guess_categories(prompt, math, ml, ops, python, softskills, stat, model=None
             Вопрос:
             {prompt}
 
-            Ответ в виде строки:
-            """
+            Верни ответ строго в JSON формате:
+            {{
+                "category": "math"
+            }}
+            Без комментариев, Без markdown, Без ```json
+        """
 
-        return call_ollama_chat(final_prompt,model)
+        response = ollama_client.call_ollama_chat(final_prompt,model)
+        if isinstance(response, dict):
+            category = response.get("category")
+        else:
+            category = response
+
+        return category
     
     else:
         reps = []
