@@ -1,3 +1,4 @@
+/cache
 /models_cache
 /storage/*.faiss
 /storage/*.pkl

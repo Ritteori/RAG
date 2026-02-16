@@ -7,6 +7,8 @@ from app.services.retrieval import (
     find_top_k_contexts
 )
 
+import numpy as np
+
 class Retriever:
     def __init__(
         self,
@@ -22,6 +24,7 @@ class Retriever:
         softskills,
         stat,
         ollama_client,
+        embedding_cache,
         model="qwen2.5:7b",
         top_k=5,
         search_k=3,
@@ -32,6 +35,7 @@ class Retriever:
         self.chunked_texts = chunked_texts
         self.logger = logger
         self.ollama_client = ollama_client
+        self.embedding_cache = embedding_cache
 
         self.math = math
         self.ml = ml
@@ -56,9 +60,18 @@ class Retriever:
         return top_k_contexts
     
     def _search(self,question):
+
+        question_embedding = self.embedding_cache.get(question)
+        if question_embedding is not None:
+            emb = question_embedding
+        else:
+            emb = self.embed_model.encode(question, normalize_embeddings=True)
+            emb = np.array([emb], dtype="float32")
+            self.embedding_cache.set(question, emb)
+
         searches = search(
-            question, self.embed_model, self.category_indices, self.category_id_maps, self.search_k,
-            self.math, self.ml, self.ops, self.python, self.softskills, self.stat, self.ollama_client, self.model
+            question, self.category_indices, self.category_id_maps, self.search_k,
+            self.math, self.ml, self.ops, self.python, self.softskills, self.stat, self.ollama_client, emb, self.model,
         )
 
         for prompt_id, results in searches.items():

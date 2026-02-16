@@ -13,6 +13,9 @@ class Limits(BaseModel):
 class Logger(BaseModel):
     logger_name: str
 
+class Cache(BaseModel):
+    ttl: int
+
 class KeyWord(BaseModel):
     math: list[str]
     ml: list[str]
@@ -30,12 +33,14 @@ class AppConfig(BaseSettings):
     LOG_LEVEL: str="INFO"
     MODELS_CACHE_PATH: str
     EMBEDDING_MODEL: str
+    CACHE_PATH: str
 
     retrieval: RetrievalConfig
     limits: Limits
     logger: Logger
     categories: list[str]
     keywords: KeyWord
+    cache: Cache
 
     class Config:
         env_file ='.env'

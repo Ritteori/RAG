@@ -17,6 +17,9 @@ limits:
 logger:
   logger_name: RAG
 
+cache:
+  ttl: 3600
+
 keywords:
   math:
     - vector

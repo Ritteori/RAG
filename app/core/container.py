@@ -3,6 +3,7 @@ from app.core.settings import load_config
 from app.services.rag_service import RAGService
 from app.services.index_loader import IndexLoader
 from app.utils.ollama_client import OllamaCLient
+from app.services.embedding_cache import EmbeddingCache
 from app.services.retriever import Retriever
 from sentence_transformers import SentenceTransformer
 import os
@@ -28,6 +29,9 @@ def create_rag_service():
     SEARCH_K = config.retrieval.search_k
     TOP_K_BEST_CONTEXTS = config.retrieval.top_k_best_contexts
 
+    CACHE_PATH = config.CACHE_PATH
+    TTL = config.cache.ttl
+
     if os.path.exists("/app/models_cache"):
         cache_folder = "/app/models_cache"
     elif os.path.exists("models_cache"):
@@ -46,11 +50,12 @@ def create_rag_service():
     category_indices, category_id_maps, chunked_texts = index_loader.load()
 
     ollama_client = OllamaCLient(logger)
+    embedding_cache = EmbeddingCache(logger, CACHE_PATH, TTL) # в докер надо дбавить создание папки /cache
 
     retriever = Retriever(
         embed_model,category_indices,category_id_maps,chunked_texts,logger,
         MATH,ML,OPS,PYTHON,SOFTSKILLS,STATISTICS_PROBABILITIES,ollama_client,
-        OLLAMA_MODEL, TOP_K_BEST_CONTEXTS, SEARCH_K
+        embedding_cache, OLLAMA_MODEL, TOP_K_BEST_CONTEXTS, SEARCH_K
     )
 
     rag_service = RAGService(config, logger, retriever, ollama_client)

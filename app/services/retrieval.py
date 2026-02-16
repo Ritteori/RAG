@@ -1,7 +1,8 @@
 import numpy as np
 from app.services.guess_cat import guess_categories
 
-def search(prompts, embed_model, category_indices, category_id_maps, search_k, math, ml, ops, python, softskills, stat, ollama_client, model="qwen2.5:7b"):
+def search(question, category_indices, category_id_maps, search_k, math, ml, ops, python,
+           softskills, stat, ollama_client, question_embedding, model="qwen2.5:7b"):
     """
     Perform semantic search over FAISS indices with optional category routing.
 
@@ -11,7 +12,7 @@ def search(prompts, embed_model, category_indices, category_id_maps, search_k, m
     - searches either a single category index or all indices (fallback)
 
     Args:
-        prompts (list[str]): List of user queries.
+        prompt (str): List of user queries.
         model: SentenceTransformer model.
         category_indices (dict): category -> FAISS index.
         category_id_maps (dict): category -> faiss_id -> chunk_id.
@@ -21,50 +22,42 @@ def search(prompts, embed_model, category_indices, category_id_maps, search_k, m
         dict: prompt_id -> list of retrieved chunks with scores.
     """
 
-    if isinstance(prompts, str):
-        prompts = [prompts]
-
     results = {}
+    results[0] = []
 
-    for idx, prompt in enumerate(prompts):
-        emb = embed_model.encode(prompt, normalize_embeddings=True)
-        emb = np.array([emb], dtype="float32")
+    cat = guess_categories(question, math, ml, ops, python, softskills, stat, ollama_client, model)
 
-        results[idx] = []
+    # ---- CASE 1: категория определена ----
+    if cat and cat in category_indices:
+        index = category_indices[cat]
+        distances, ids = index.search(question_embedding, search_k)
 
-        cat = guess_categories(prompt,math, ml, ops, python, softskills, stat, ollama_client, model)
+        for score, i in zip(distances[0], ids[0]):
+            results[0].append({
+                "chunk_id": category_id_maps[cat][i],
+                "score": float(score),
+                "category": cat
+            })
 
-        # ---- CASE 1: категория определена ----
-        if cat and cat in category_indices:
-            index = category_indices[cat]
-            distances, ids = index.search(emb, search_k)
+    # ---- CASE 2: fallback (по всем категориям) ----
+    else:
+        all_candidates = []
+
+        for cat_name, index in category_indices.items():
+            distances, ids = index.search(question_embedding, search_k)
 
             for score, i in zip(distances[0], ids[0]):
-                results[idx].append({
-                    "chunk_id": category_id_maps[cat][i],
+                all_candidates.append({
+                    "chunk_id": category_id_maps[cat_name][i],
                     "score": float(score),
-                    "category": cat
+                    "category": cat_name
                 })
 
-        # ---- CASE 2: fallback (по всем категориям) ----
-        else:
-            all_candidates = []
+        # глобальная сортировка
+        all_candidates.sort(key=lambda x: x["score"], reverse=True)
 
-            for cat_name, index in category_indices.items():
-                distances, ids = index.search(emb, search_k)
-
-                for score, i in zip(distances[0], ids[0]):
-                    all_candidates.append({
-                        "chunk_id": category_id_maps[cat_name][i],
-                        "score": float(score),
-                        "category": cat_name
-                    })
-
-            # глобальная сортировка
-            all_candidates.sort(key=lambda x: x["score"], reverse=True)
-
-            # берём top-search_k глобально
-            results[idx] = all_candidates[:search_k]
+        # берём top-search_k глобально
+        results[0] = all_candidates[:search_k]
 
     return results
 
