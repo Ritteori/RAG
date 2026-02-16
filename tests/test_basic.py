@@ -16,12 +16,4 @@ def test_query_rag_with_empty_answer(client,sample_question):
         "user_answer": ""
     }
     response = client.post("/query",json=test_data)
-    assert response.status_code == 200
-
-    data = response.json()
-    assert "answer" in data
-
-    answer_data = data["answer"]
-    structure = ["score","weak_points","missed_topics","correct_points","full_correct_answer","final_feedback"]
-    for field in structure:
-        assert field in answer_data
+    assert response.status_code == 422
