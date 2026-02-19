@@ -1,6 +1,9 @@
 import subprocess
 import time
 import requests
+import pytest
+
+pytestmark = pytest.mark.integration
 
 def test_docker_containers_up():
 
@@ -10,8 +13,8 @@ def test_docker_containers_up():
     )
     containers = result.stdout.split()
 
-    assert 'rag-rag-api-1' in containers, "Can't find container rag-rag-api-1"
-    assert 'rag-ollama-1' in containers, "Can't find container rag-ollama-1"
+    assert any("rag-api" in c for c in containers), "Can't find container rag-rag-api-1"
+    assert any("rag-ollama-1" in c for c in containers), "Can't find container rag-ollama-1"
 
 def test_ollama_health():
     time.sleep(5)

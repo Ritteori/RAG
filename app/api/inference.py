@@ -1,9 +1,9 @@
 from fastapi import FastAPI, Request
-from pydantic import BaseModel, Field
 from contextlib import asynccontextmanager
 import random
 
 from app.core.container import create_rag_service
+from app.api.schemas import QueryRAG
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -23,10 +23,6 @@ async def lifespan(app: FastAPI):
     app.state.logger.info("Shutting down...")
 
 app = FastAPI(title='RAG implementation', lifespan=lifespan)
-
-class QueryRAG(BaseModel):
-    question: str = Field(...,min_length=3,max_length=400)
-    user_answer: str = Field(...,min_length=1,max_length=3000)
 
 @app.get("/health")
 async def health():

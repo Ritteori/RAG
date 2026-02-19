@@ -1,4 +1,3 @@
-import numpy as np
 from app.services.guess_cat import guess_categories
 
 def search(question, category_indices, category_id_maps, search_k, math, ml, ops, python,

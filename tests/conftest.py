@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from app.api.inference import app
 from app.utils.ollama_client import OllamaCLient
+from app.services.embedding_cache import EmbeddingCache
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 import logging
@@ -61,5 +62,35 @@ def test_logger():
     return logging.getLogger("test")
 
 @pytest.fixture
-def ollama_client():
+def ollama_client(test_logger):
     return OllamaCLient(logger=test_logger)
+
+@ pytest.fixture
+def chunked_texts():
+    return {
+  "data/math/vectors_matrix_definition.txt::0": {
+    "text": "1. что такое вектор в математике? \nв математике вектор — это упорядоченный набор чисел, представляющий \nэлемент векторного пространства. \nон имеет направление и величину и может быть записан как столбец или строка \nиз чисел. векторы часто интерпретируют как точки или стрелки в пространстве \nℝⁿ, где каждое число — это координата в соответствующем измерении. \n",
+    "path": "/data/projects/RAG/data/math/vectors_matrix_definition.txt",
+    "category": "math",
+    "chunk_index": 0,
+    "source_file": "/data/math/vectors_matrix_definition.txt"
+  },
+  "data/math/vectors_matrix_definition.txt::1": {
+    "text": "1. что такое вектор в математике? \nв математике вектор — это упорядоченный набор чисел, представляющий \nэлемент векторного пространства. \nон имеет направление и величину и может быть записан как столбец или строка \nиз чисел. векторы часто интерпретируют как точки или стрелки в пространстве \nℝⁿ, где каждое число — это координата в соответствующем измерении. \n",
+    "path": "/data/projects/RAG/data/math/vectors_matrix_definition.txt",
+    "category": "math",
+    "chunk_index": 1,
+    "source_file": "/data/math/vectors_matrix_definition.txt"
+  },
+    "data/math/vectors_matrix_definition.txt::2": {
+    "text": "1. что такое вектор в математике? \nв математике вектор — это упорядоченный набор чисел, представляющий \nэлемент векторного пространства. \nон имеет направление и величину и может быть записан как столбец или строка \nиз чисел. векторы часто интерпретируют как точки или стрелки в пространстве \nℝⁿ, где каждое число — это координата в соответствующем измерении. \n",
+    "path": "/data/projects/RAG/data/math/vectors_matrix_definition.txt",
+    "category": "math",
+    "chunk_index": 2,
+    "source_file": "/data/math/vectors_matrix_definition.txt"
+  }
+}
+
+@pytest.fixture
+def embedding_cache(test_logger):
+    return EmbeddingCache(logger=test_logger, cache_path="cache/test_embeddings.json", ttl_seconds=1)
