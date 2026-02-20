@@ -7,11 +7,19 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 import logging
 
+class FakeRAGService:
+    def query(self, question: str):
+        return "fake answer"
 
 @pytest.fixture
-def client():
-    with TestClient(app) as test_client:
-        yield test_client
+def client(test_logger):
+    client = TestClient(app)
+
+    app.state.rag_service = FakeRAGService()
+    app.state.logger = test_logger
+    app.state.questions = ["Test question?"]
+
+    return client
 
 @pytest.fixture
 def sample_question():
