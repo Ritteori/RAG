@@ -32,7 +32,7 @@ orjson==3.9.10
 psutil==5.9.6
 colorlog==6.7.0
 
-pytest==9.0.2
+pytest==8.2.2
 pytest-asyncio==0.23.6
 pytest-cov==7.0.0
 pytest-mock==3.14.0
