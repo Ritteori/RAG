@@ -25,6 +25,14 @@ jobs:
           pip install -r requirements.txt
         
       - name: Run tests
+        env:
+          API_PORT: 8000
+          OLLAMA_EXTERNAL_PORT: 11434
+          OLLAMA_URL: http://localhost:11434
+          OLLAMA_MODEL: llama3
+          MODELS_CACHE_PATH: ./models_cache
+          EMBEDDING_MODEL: all-MiniLM-L6-v2
+          CACHE_PATH: ./cache
         run: |
           pytest -v -m "not integration"
 
