@@ -19,7 +19,7 @@ COPY . .
 RUN useradd -m -u 1000 raguser && chown -R raguser:raguser /app
 USER raguser
 
-RUN mkdir -p /app/models_cache /app/logs /app/storage
+RUN mkdir -p /app/models_cache /app/logs /app/storage /app/cache
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:8000/health || exit 1
