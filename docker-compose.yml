@@ -1,39 +1,42 @@
 services:
-  rag-api:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama_server
+    command: serve
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ollama-model-puller:
+    image: ollama/ollama:latest
+    container_name: ollama_puller
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      ollama:
+        condition: service_healthy
+    command: ["pull", "qwen2.5:7b"]
+
+  rag_api:
     build: .
+    container_name: rag_app
     ports:
       - "8000:8000"
     volumes:
       - ./data:/app/data:ro
-      - ./storage:/app/storage
       - ./models_cache:/app/models_cache
+      - ./storage:/app/storage
     environment:
       - OLLAMA_URL=http://ollama:11434
-      - LOG_LEVEL=INFO
     depends_on:
-      ollama:
-        condition: service_started  # меняем с healthy на started
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  ollama:
-    image: ollama/ollama:latest
-    ports:
-      - "11435:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-      - ./init_ollama.sh:/init_ollama.sh
-    entrypoint: ["/bin/sh", "/init_ollama.sh"]
-    healthcheck:
-      test: ["CMD-SHELL", "ps aux | grep ollama | grep -v grep"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 40s
+      ollama-model-puller:
+        condition: service_completed_successfully
 
 volumes:
   ollama_data:

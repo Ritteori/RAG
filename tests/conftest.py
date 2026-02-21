@@ -100,5 +100,10 @@ def chunked_texts():
 }
 
 @pytest.fixture
-def embedding_cache(test_logger):
-    return EmbeddingCache(logger=test_logger, cache_path="cache/test_embeddings.json", ttl_seconds=1)
+def embedding_cache(tmp_path, test_logger):
+    cache_file = tmp_path / "test_embeddings.json"
+    return EmbeddingCache(
+        logger=test_logger,
+        cache_path=str(cache_file),
+        ttl_seconds=1
+    )

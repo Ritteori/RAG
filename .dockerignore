@@ -8,6 +8,7 @@ storage/ops.faiss
 storage/softskills.faiss
 storage/math.faiss
 storage/ml.faiss
+cache/
 test/
 README.md
 __pycache__/
