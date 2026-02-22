@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from contextlib import asynccontextmanager
+from prometheus_fastapi_instrumentator import Instrumentator
 import random
 
 from app.core.container import create_rag_service
@@ -23,6 +24,8 @@ async def lifespan(app: FastAPI):
     app.state.logger.info("Shutting down...")
 
 app = FastAPI(title='RAG implementation', lifespan=lifespan)
+instrumentator = Instrumentator()
+instrumentator.instrument(app).expose(app)
 
 @app.get("/health")
 async def health():
