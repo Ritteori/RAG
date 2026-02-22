@@ -1,49 +1,22 @@
-### В README написать про то,что нужно устанавилвать nvidia-container-toolkit,так как без него работать не будет работать оллама,которая в созданном контейнере 
-### Не добавлял из-за разных возможных ОС и надо рассмотреть каждый edge case
+# ## GPU Support
+
+# To run Ollama with GPU acceleration you must:
+
+# 1. Install NVIDIA drivers
+# 2. Install nvidia-container-toolkit
+# 3. Verify:
+
+#    nvidia-smi
+#    docker run --rm --gpus all nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi
+
+# Then run:
+
+# docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build
 
 services:
-  rag-api:
-    build: .
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./data:/app/data:ro
-      - ./storage:/app/storage
-      - ./models_cache:/app/models_cache
-    environment:
-      - OLLAMA_URL=http://ollama:11434
-      - LOG_LEVEL=INFO
-    depends_on:
-      ollama:
-        condition: service_started
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
   ollama:
-    image: ollama/ollama:latest
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-    ports:
-      - "11435:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-      - ./init_ollama.sh:/init_ollama.sh
-    entrypoint: ["/bin/sh", "/init_ollama.sh"]
-    healthcheck:
-      test: ["CMD-SHELL", "ps aux | grep ollama | grep -v grep"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 40s
-
-volumes:
-  ollama_data:
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+  
