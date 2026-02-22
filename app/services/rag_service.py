@@ -1,5 +1,6 @@
 from app.core.logger import timed
 from app.prompts.prompt_builder import inference_mvp
+from app.api.metrics import generate_latency
 
 import re
 
@@ -41,20 +42,20 @@ class RAGService():
         with timed(self.logger, 'Final prompt'):
             final_prompt = self.normalize_text(inference_mvp(top_k_contexts, question, answer))
         self.logger.debug(f'Final prompt: {final_prompt}')
+        with generate_latency.time():
+            with timed(self.logger, 'Model response'):
+                response_text = self.ollama_client.call_ollama_chat(final_prompt,self.OLLAMA_MODEL)
+            self.logger.debug(f'Model response: {response_text}')
 
-        with timed(self.logger, 'Model response'):
-            response_text = self.ollama_client.call_ollama_chat(final_prompt,self.OLLAMA_MODEL)
-        self.logger.debug(f'Model response: {response_text}')
+            REGENERATE_PREFIX = "В предыдущем ответе был не русский текст. Перепиши ответ полностью, только на русском."
+            retries = 0
+            while self.contains_chinese(response_text) and retries < self.MAX_RETRIES:
+                self.logger.info('Regenerating answer due to incorrect output...')
+                retries += 1
+                response_text = self.ollama_client.call_ollama_chat(REGENERATE_PREFIX + final_prompt,self.OLLAMA_MODEL)
 
-        REGENERATE_PREFIX = "В предыдущем ответе был не русский текст. Перепиши ответ полностью, только на русском."
-        retries = 0
-        while self.contains_chinese(response_text) and retries < self.MAX_RETRIES:
-            self.logger.info('Regenerating answer due to incorrect output...')
-            retries += 1
-            response_text = self.ollama_client.call_ollama_chat(REGENERATE_PREFIX + final_prompt,self.OLLAMA_MODEL)
-
-        if self.contains_chinese(response_text):
-            return {"answer": "Ошибка генерации: модель нарушает языковое ограничение."}
+            if self.contains_chinese(response_text):
+                return {"answer": "Ошибка генерации: модель нарушает языковое ограничение."}
 
         self.logger.info("Ответ успешно сгенерирован")
         return response_text

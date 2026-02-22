@@ -1,3 +1,5 @@
+from app.api.metrics import cache_count
+
 from pathlib import Path
 import numpy as np
 import json
@@ -14,6 +16,8 @@ class EmbeddingCache():
         self.logger = logger
         self.cache = {}
         self._load()
+
+        cache_count.set(len(self.cache))
 
     def _load(self):
         
@@ -55,6 +59,7 @@ class EmbeddingCache():
             embedding, ts = info.values()
             if now_time - ts >= self.ttl_seconds:
                 del(self.cache[question])
+                cache_count.set(len(self.cache))
             else:
                 return embedding
 
@@ -64,6 +69,7 @@ class EmbeddingCache():
             "created_at":time.time()
         }
         self.save()
+        cache_count.set(len(self.cache))
 
     def clear_expired(self):
 
@@ -78,3 +84,4 @@ class EmbeddingCache():
 
         for question in to_delete:
             del(self.cache[question])
+            cache_count.set(len(self.cache))

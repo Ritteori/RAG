@@ -1,3 +1,4 @@
+from app.api.metrics import retrieval_latency, retrieved_contexts
 from app.services.retrieval import (
     search,
     group_by_files,
@@ -49,13 +50,14 @@ class Retriever:
         self.search_k = search_k
 
     def retrieve(self, question: str):
-        
-        searches = self._search(question)
-        groups = self._group_by_files(searches)
-        neighbours = self._find_neighbours(groups)
-        contexts = self._build_context_texts(neighbours)
-        chunk_score, best_contexts = self._find_anchor_chunks_scores(searches,neighbours)
-        top_k_contexts = self._find_top_k_contexts(contexts,best_contexts)
+
+        with retrieval_latency.time():
+            searches = self._search(question)
+            groups = self._group_by_files(searches)
+            neighbours = self._find_neighbours(groups)
+            contexts = self._build_context_texts(neighbours)
+            chunk_score, best_contexts = self._find_anchor_chunks_scores(searches,neighbours)
+            top_k_contexts = self._find_top_k_contexts(contexts,best_contexts)
 
         return top_k_contexts
     
@@ -90,6 +92,7 @@ class Retriever:
 
     def _build_context_texts(self,neighbours):
         contexts = build_context_texts(neighbours, self.chunked_texts)
+        retrieved_contexts.observe(len(contexts))
         return contexts
 
     def _find_anchor_chunks_scores(self,searches, neighbours):

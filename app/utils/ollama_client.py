@@ -3,6 +3,8 @@ import requests
 import os
 import time
 
+from app.api.metrics import circuit_breaker_state
+
 class OllamaCLient():
     def __init__(self, logger):
 
@@ -87,10 +89,12 @@ class OllamaCLient():
             else:
                 self.logger.info("Trying to recover Ollama connection...")
                 self.is_broken = False
+                circuit_breaker_state.set(1)
 
         try:
             content = self._execute_with_retry(prompt,model)
             self.failures_count = 0 
+            circuit_breaker_state.set(0) 
             return content
 
         except Exception as e:
@@ -101,6 +105,7 @@ class OllamaCLient():
 
             if self.failures_count >= self.MAX_FAILURES:
                 self.is_broken = True
+                circuit_breaker_state.set(1)
                 self.logger.critical("CIRCUIT BREAKER TRIPPED!")
             
             return self._get_empty_response()
